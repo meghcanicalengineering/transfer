@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+
+import rospy
+from sensor_msgs.msg import Imu
+
+def imu_callback(imu_data):
+    rospy.loginfo("IMU Data:")
+    rospy.loginfo("Orientation: x={}, y={}, z={}, w={}".format(
+        imu_data.orientation.x,
+        imu_data.orientation.y,
+        imu_data.orientation.z,
+        imu_data.orientation.w
+    ))
+    rospy.loginfo("Angular Velocity: x={}, y={}, z={}".format(
+        imu_data.angular_velocity.x,
+        imu_data.angular_velocity.y,
+        imu_data.angular_velocity.z
+    ))
+    rospy.loginfo("Linear Acceleration: x={}, y={}, z={}".format(
+        imu_data.linear_acceleration.x,
+        imu_data.linear_acceleration.y,
+        imu_data.linear_acceleration.z
+    ))
+
+def imu_listener():
+    rospy.init_node('imu_listener', anonymous=True)
+    rospy.Subscriber('/imu', Imu, imu_callback)
+    rospy.spin()
+
+if __name__ == '__main__':
+    try:
+        imu_listener()
+    except rospy.ROSInterruptException:
+        pass
