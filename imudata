@@ -1,34 +1,33 @@
-#!/usr/bin/env python3
-
-import rospy
+import rclpy
+from rclpy.node import Node
 from sensor_msgs.msg import Imu
+from mpu6050 import mpu6050
 
-def imu_callback(imu_data):
-    rospy.loginfo("IMU Data:")
-    rospy.loginfo("Orientation: x={}, y={}, z={}, w={}".format(
-        imu_data.orientation.x,
-        imu_data.orientation.y,
-        imu_data.orientation.z,
-        imu_data.orientation.w
-    ))
-    rospy.loginfo("Angular Velocity: x={}, y={}, z={}".format(
-        imu_data.angular_velocity.x,
-        imu_data.angular_velocity.y,
-        imu_data.angular_velocity.z
-    ))
-    rospy.loginfo("Linear Acceleration: x={}, y={}, z={}".format(
-        imu_data.linear_acceleration.x,
-        imu_data.linear_acceleration.y,
-        imu_data.linear_acceleration.z
-    ))
+class IMUNode(Node):
+    def __init__(self):
+        super().__init__('imu_node')
+        self.publisher_ = self.create_publisher(Imu, '/imu/data_raw', 10)  # Change the topic name here
+        self.imu_sensor = mpu6050(0x68)  # Address of MPU6050, usually 0x68
+        self.imu_sensor.setup()
 
-def imu_listener():
-    rospy.init_node('imu_listener', anonymous=True)
-    rospy.Subscriber('/imu', Imu, imu_callback)
-    rospy.spin()
+    def publish_imu_data(self):
+        imu_data = self.imu_sensor.get_all_data()  # Read raw data from MPU6050
+        imu_msg = Imu()
+        imu_msg.linear_acceleration.x = imu_data['x_accel']
+        imu_msg.linear_acceleration.y = imu_data['y_accel']
+        imu_msg.linear_acceleration.z = imu_data['z_accel']
+        imu_msg.angular_velocity.x = imu_data['x_gyro']
+        imu_msg.angular_velocity.y = imu_data['y_gyro']
+        imu_msg.angular_velocity.z = imu_data['z_gyro']
+
+        self.publisher_.publish(imu_msg)
+
+def main(args=None):
+    rclpy.init(args=args)
+    imu_node = IMUNode()
+    rclpy.spin(imu_node)
+    imu_node.destroy_node()
+    rclpy.shutdown()
 
 if __name__ == '__main__':
-    try:
-        imu_listener()
-    except rospy.ROSInterruptException:
-        pass
+    main()
